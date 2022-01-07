@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "lib": ["es2015"],
+        "target": "es2018",
+        "noImplicitAny": false,
+        "noImplicitThis": true,
+        "strictNullChecks": false,
+        "strictFunctionTypes": true,
+        "esModuleInterop" : true,
+        "outDir": "dist",
+        "baseUrl": ".",
+        "paths": {
+				},
+				"typeRoots": ["src"]
+
+    },
+    "include": [
+        "src/*.ts"
+    ],
+    "exclude": [
+      "node_modules"
+    ]
+  }
