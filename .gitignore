@@ -1,5 +1,3 @@
-/node_modules
-/.vscode
 /.history
-/dist
-/coverage
+/.vscode
+/sort-files
