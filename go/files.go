@@ -131,8 +131,8 @@ func readDateFromName(name string) (*time.Time, error) {
 	for _, p := range patterns {
 		if p.MatchString(name) {
 			name = p.FindString(name)
-			name = strings.Replace(name, "_", "-", 3)
-			t, err := time.Parse("YYYY-MM-DD", name)
+			name = strings.Replace(name, "_", "", 3)
+			t, err := time.Parse("YYYYMMDD", name)
 			return &t, err
 		}
 	}
