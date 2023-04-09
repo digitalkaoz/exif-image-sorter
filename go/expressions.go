@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"regexp"
 )
 
@@ -14,7 +13,7 @@ func getFileFilterExpression() *regexp.Regexp {
 		f, err := regexp.Compile("^.+\\.(jpeg|jpg|JPG|JPEG)$")
 
 		if err != nil {
-			log.Fatal(err)
+			printError(err.Error())
 		}
 		fileFilter = f
 	}
@@ -25,17 +24,15 @@ func getFileFilterExpression() *regexp.Regexp {
 func getDateFromFilenameExpressions() []*regexp.Regexp {
 	if len(expressions) == 0 {
 		patterns := []string{
-			"([\\d]{8})[_|-]",
-			"^IMG-([\\d]{8})[_|-]",
-			"^IMG_([\\d]{8})[_|-]",
-			"^IMG_([\\d]{4}_[\\d]{2}_[\\d]{2})[_|-]",
+			"[_|-]([\\d]{8})[_|-]",                           //matches e.g. IMG_20221030-foo.jpg
+			"[_|-]([\\d]{4}[_|-][\\d]{2}[_|-][\\d]{2})[_|-]", //matches e.g. IMG-2022-10-30_bar.jpg
 		}
 
 		for _, pattern := range patterns {
 			f, err := regexp.Compile(pattern)
 
 			if err != nil {
-				log.Fatal(err)
+				printError(err.Error())
 			}
 			expressions = append(expressions, f)
 		}
