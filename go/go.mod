@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/fatih/color v1.13.0
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
+	github.com/tajtiattila/metadata v0.0.0-20221215122306-ecdbfc756113
 )
 
 require (

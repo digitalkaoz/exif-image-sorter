@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"github.com/rwcarlsen/goexif/exif"
 	"github.com/rwcarlsen/goexif/mknote"
+	"github.com/tajtiattila/metadata"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -17,8 +19,8 @@ type processInfo struct {
 	moved   bool
 }
 
-func iterateSourceFiles(folder string, dest string) {
-	filter := getFileFilterExpression()
+func iterateSourceFiles(filetype string, folder string, dest string) {
+	filter := getFileFilterExpression(filetype)
 	exif.RegisterParsers(mknote.All...)
 
 	foundFiles := 0
@@ -47,15 +49,42 @@ func iterateSourceFiles(folder string, dest string) {
 	}
 }
 
+func isImage(name string) bool {
+	return strings.HasSuffix(strings.ToLower(name), ".jpg") || strings.HasSuffix(strings.ToLower(name), ".jpeg")
+}
+
 func handleImage(name string, destination string, channel chan processInfo) {
-	creationTime, err := readDateFromExif(name)
-
-	if creationTime == nil || err != nil {
-		// no exif or no date in tags, try to read from filename
-		creationTime, err = readDateFromName(name)
-	}
-
+	var creationTime *time.Time
 	var folder string
+	var err error
+
+	if isImage(name) {
+		// fetch image creation date from exif data
+		creationTime, err = readDateFromExif(name)
+
+		if creationTime == nil || err != nil {
+			// no exif or no date in tags, try to read from filename
+			creationTime, err = readDateFromName(name)
+		}
+	} else {
+		// fetch video creation date from metadata
+		creationTimeVideo, _ := readDateFromMetadata(name)
+		creationTimeFile, _ := readDateFromName(name)
+		if creationTimeVideo == nil && creationTimeFile != nil {
+			// only date in filename detected
+			creationTime = creationTimeFile
+		} else if creationTimeVideo != nil && creationTimeFile == nil {
+			// only date in metadata detected
+			creationTime = creationTimeVideo
+		} else if creationTimeVideo != nil && creationTimeFile != nil && creationTimeVideo.Format(time.DateOnly) != creationTimeFile.Format(time.DateOnly) {
+			// detected both, but they are different, so take the one from the filename
+			creationTime = creationTimeFile
+		} else {
+			// both are set an equal
+			creationTime = creationTimeFile
+		}
+		// is there an else?
+	}
 
 	if creationTime != nil {
 		month := strconv.Itoa(int(creationTime.Month()))
@@ -104,6 +133,30 @@ func createFolder(name string) string {
 	}
 
 	return name
+}
+
+func readDateFromMetadata(name string) (*time.Time, error) {
+	fd, err := os.Open(name)
+	defer fd.Close()
+
+	if err != nil {
+		return nil, err
+	}
+
+	md, err := metadata.Parse(fd)
+	if err != nil {
+		return nil, err
+	}
+	if _, ok := md.Attr["DateTimeCreated"]; ok {
+		zeroTime := time.Unix(0, 0)
+		if md.DateTimeCreated.Time.Before(zeroTime) {
+			// unreasonable date detected
+			return nil, errors.New("no metadata extractable")
+		}
+		creationTime := md.DateTimeCreated.Time
+		return &creationTime, nil
+	}
+	return nil, errors.New("no metadata extractable")
 }
 
 func readDateFromExif(name string) (*time.Time, error) {
